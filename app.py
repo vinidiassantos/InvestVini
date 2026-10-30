@@ -2,8 +2,33 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 
-# 1. Configuração da Página
+# 1. Configuração da Página (Deve ser o primeiro comando Streamlit do app)
 st.set_page_config(page_title="Meus Investimentos", page_icon="💰", layout="wide")
+
+# ==========================================
+# 2. TRAVA DE SEGURANÇA (PROTEÇÃO POR SENHA)
+# ==========================================
+if "password_correct" not in st.session_state:
+    st.session_state.password_correct = False
+
+if not st.session_state.password_correct:
+    st.title("🔒 Acesso Restrito")
+    st.write("Este aplicativo é privado. Insira a senha para visualizar os investimentos.")
+    
+    password = st.text_input("Senha:", type="password")
+    
+    if st.button("Entrar"):
+        # Compara a senha digitada com a que está no arquivo secrets.toml
+        if password == st.secrets["app_password"]:
+            st.session_state.password_correct = True
+            st.rerun()
+        else:
+            st.error("Senha incorreta. Tente novamente.")
+            
+    st.stop() # Interrompe a execução aqui se a senha estiver errada
+# ==========================================
+
+# A partir daqui, o código só roda se a pessoa acertar a senha!
 
 st.title("💰 Dashboard de Investimentos")
 st.markdown("Acompanhe suas ações, FIIs e o Tesouro Direto em um só lugar.")
