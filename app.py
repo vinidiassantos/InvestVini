@@ -16,7 +16,6 @@ st.markdown("""
         .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
         header { visibility: hidden; }
         
-        /* O flex-wrap faz os itens descerem de linha em telas menores */
         .header-container { 
             display: flex; 
             flex-wrap: wrap; 
@@ -33,6 +32,16 @@ st.markdown("""
         .kpi-value { font-size: 1.4rem; font-weight: 600; line-height: 1; }
         .kpi-sub { font-size: 0.8rem; margin-top: 3px; font-weight: bold; }
         .kpi-meta { text-align: right; flex: 1.5; min-width: 150px; }
+        
+        /* Estilo para os bullets compactos */
+        .compact-list { margin-top: 0px; margin-bottom: 0px; padding-left: 20px; line-height: 1.4; font-size: 13px; }
+        .compact-list li { margin-bottom: 4px; }
+        .news-link { color: #4da6ff; text-decoration: none; font-size: 11px; margin-left: 5px; }
+        .news-link:hover { text-decoration: underline; }
+        
+        /* Remove sublinhado dos links nos cards */
+        a.ticker-link { text-decoration: none; }
+        a.ticker-link:hover { text-decoration: underline; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -77,6 +86,18 @@ with st.sidebar:
 # ==========================================
 def fmt_brl(valor):
     return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+def fmt_pct(valor):
+    return f"{valor:.2f}%".replace(".", ",")
+
+def gerar_link_investidor10(ticker):
+    ticker_lower = ticker.lower()
+    if ticker_lower in ['xpml11', 'mcci11', 'hglg11', 'knri11', 'mxrf11']:
+        return f"https://investidor10.com.br/fiis/{ticker_lower}/"
+    elif ticker_lower in ['bova11']:
+        return f"https://investidor10.com.br/etfs/{ticker_lower}/"
+    else:
+        return f"https://investidor10.com.br/acoes/{ticker_lower}/"
 
 def formatar_data_min(data_timestamp):
     if pd.isna(data_timestamp):
@@ -159,8 +180,68 @@ def gerar_tabela_renda_fixa(ativos, investidos, posicoes, ganhos, taxas_atuais):
             
         dados_grafico[ativo] = taxas_ativo
         
-    df_grafico = pd.DataFrame(dados_grafico, index=meses_2026)
+    datas_dt = pd.to_datetime([f"2026-{str(i).zfill(2)}-01" for i in range(1, 13)])
+    df_grafico = pd.DataFrame(dados_grafico, index=datas_dt)
+    df_grafico = df_grafico[:'2026-10-01']
+    
     return df, df_grafico
+
+# ==========================================
+# NOTÍCIAS E OPORTUNIDADES (BULLETS)
+# ==========================================
+def get_noticias_renda_variavel():
+    return """
+    <ul class="compact-list">
+        <li><b>VALE3:</b> Ação sobe forte após 'call' positiva sobre câmbio e metais, mesmo com lucro em queda. <a class="news-link" href="https://valor.globo.com/financas/noticia/2026/10/30/acoes-da-vale-vale3-sobem-forte-apos-call-com-perspectiva-mais-positiva-sobre-cambio-e-metais.ghtml" target="_blank">[Ler mais]</a></li>
+        <li><b>WEGE3:</b> Dispara 4,4% hoje e acumula alta de 15,3% na semana, na contramão do Ibovespa. <a class="news-link" href="https://br.investing.com/analysis/wege3-dispara-44-hoje-weg-sobe-153-na-semana-enquanto-o-ibovespa-cai-200480439" target="_blank">[Ler mais]</a></li>
+        <li><b>ITSA4:</b> Holding negocia perto de R$ 13,00 após correção; analistas veem oportunidade em bancos. <a class="news-link" href="https://opetroleo.com.br/bolsa-em-queda-tres-acoes-para-comecar-a-investir-com-apenas-r-300-entram-no-radar/" target="_blank">[Ler mais]</a></li>
+        <li><b>BOVA11:</b> ETF do Ibovespa é opção para exposição ampla ao mercado em meio à volatilidade. <a class="news-link" href="https://br.investing.com/analysis/o-dia-apos-circuit-breaker-o-que-o-historico-diz-sobre-comprar-bolsa-brasil-agora-200480123" target="_blank">[Ler mais]</a></li>
+        <li><b>CEAB3:</b> Goldman Sachs eleva participação em derivativos para 5,66%; ação segue volátil. <a class="news-link" href="https://visnoinvest.com/goldman-sachs-reaches-566-in-ca-ceab3-derivatives/" target="_blank">[Ler mais]</a></li>
+        <li><b>XPML11:</b> FII de shoppings negocia abaixo do valor patrimonial e aposta em aquisições para reforçar resultados. <a class="news-link" href="https://opetroleo.com.br/xpml11-hoje-cotacao-cai-para-r-9598-e-dividendos-de-r-092-entram-em-alerta/" target="_blank">[Ler mais]</a></li>
+        <li><b>MCCI11:</b> Fundo mantém carteira defensiva e proteção contra inflação, com retorno acumulado de 96%. <a class="news-link" href="https://conteudos.xpi.com.br/fundos-imobiliarios/relatorios/maua-capital-recebiveis-imobiliarios-mcci11-carteira-defensiva-e-protecao-contra-inflacao/" target="_blank">[Ler mais]</a></li>
+    </ul>
+    """
+
+def get_oportunidades_renda_variavel():
+    return """
+    <ul class="compact-list">
+        <li><b>Small Caps:</b> BB-BI inclui <b>Pine (PINE4)</b> e <b>Dexco (DXCO3)</b> na carteira de novembro. <a class="news-link" href="https://investalk.bb.com.br/noticias/onde-investir/carteira-smallcaps-novembro-26" target="_blank">[Ler mais]</a></li>
+        <li><b>Exportadoras:</b> Dólar alto coloca <b>Suzano (SUZB3)</b>, <b>Gerdau (GGBR4)</b> e <b>Embraer (EMBJ3)</b> no radar. <a class="news-link" href="https://www.infomoney.com.br/mercados/dolar-forte-apos-eleicao-coloca-exportadoras-no-radar-quais-sao-as-acoes-preferidas/" target="_blank">[Ler mais]</a></li>
+        <li><b>Recuperação:</b> Itaú BBA vê potencial em <b>Equatorial (EQTL3)</b>, <b>Rede D'Or (RDOR3)</b>, <b>Localiza (RENT3)</b> e <b>Sabesp (SBSP3)</b>. <a class="news-link" href="https://euqueroinvestir.com/apos-alta-de-11-do-ibovespa-itau-bba-aponta-4-acoes-que-ainda-podem-se-recuperar/" target="_blank">[Ler mais]</a></li>
+        <li><b>BDRs:</b> Negociação de recibos de ações internacionais bate recorde; veja os mais procurados. <a class="news-link" href="https://valorinveste.globo.com/mercados/renda-variavel/noticia/2026/10/30/da-mineradora-aura-ao-nubank-os-bdrs-mais-procurados-na-b3-para-investir-la-fora.ghtml" target="_blank">[Ler mais]</a></li>
+        <li><b>Small/Midcaps:</b> JPMorgan destaca <b>JSL (JSLG3)</b>, <b>Cury (CURY3)</b>, <b>Direcional (DIRR3)</b> e <b>Moura Dubeux (MDNE3)</b>. <a class="news-link" href="https://www.moneytimes.com.br/as-small-e-midcaps-brasileiras-para-ficar-de-olho-segundo-o-jpmorgan/" target="_blank">[Ler mais]</a></li>
+    </ul>
+    """
+
+def get_noticias_renda_fixa(titulos):
+    noticias = []
+    for titulo in titulos:
+        if "IPCA+ 2032" in titulo:
+            noticias.append(f'<li><b>{titulo}:</b> Taxa cai para IPCA + 7,89% ao ano, queda de 9 pontos-base. <a class="news-link" href="https://istoedinheiro.com.br/tesouro-direto-taxas-30-10-2026" target="_blank">[Ler mais]</a></li>')
+        elif "IPCA+ 2029" in titulo:
+            noticias.append(f'<li><b>{titulo}:</b> Recuou de IPCA + 7,98% para 7,37% em um mês, segundo a Rankia. <a class="news-link" href="https://rankia.com.br/tesouro-direto-taxas-caem-antes-da-eleicao-de-2026/" target="_blank">[Ler mais]</a></li>')
+        elif "IPCA+ 2035" in titulo:
+            noticias.append(f'<li><b>{titulo}:</b> Taxas saltaram para IPCA + 7% ao ano após o resultado das eleições. <a class="news-link" href="https://investidor10.com.br/fiis/noticias/lula-4-derruba-todos-os-fiis-na-b3-e-so-o-ifix-derrete-6/" target="_blank">[Ler mais]</a></li>')
+        elif "PRÉ 2032" in titulo:
+            noticias.append(f'<li><b>{titulo}:</b> Prefixado 2032 atinge 15,38% ao ano, maior nível desde o choque eleitoral. <a class="news-link" href="https://istoedinheiro.com.br/tesouro-direto-taxas-30-10-2026" target="_blank">[Ler mais]</a></li>')
+        elif "PRÉ 2035" in titulo:
+            noticias.append(f'<li><b>{titulo}:</b> Taxas dos DIs encerram semana com altas acumuladas de mais de 250 pontos-base. <a class="news-link" href="https://br.investing.com/news/economy/taxas-dos-dis-encerram-semana-com-altas-acumuladas-de-mais-de-250-pontosbase-apos-vitoria-de-lula-1345678" target="_blank">[Ler mais]</a></li>')
+        elif "Selic 2031" in titulo or "SELIC 2031" in titulo:
+            noticias.append(f'<li><b>{titulo}:</b> Tesouro Selic 2031 oferece remuneração de Selic + 0,10% ao ano, opção segura. <a class="news-link" href="https://www.moneytimes.com.br/tesouro-direto-abre-com-taxas-acima-de-8-ipca-e-precos-em-queda-de-mais-de-20/" target="_blank">[Ler mais]</a></li>')
+        else:
+            noticias.append(f'<li><b>{titulo}:</b> Acompanhe as taxas do Tesouro Direto hoje; juro real próximo de 8% ao ano. <a class="news-link" href="https://www.infomoney.com.br/onde-investir/tesouro-direto-hoje-taxas-recua-de-leve-mas-prefixado-2032-ainda-rende-1538/" target="_blank">[Ler mais]</a></li>')
+    return "<ul class='compact-list'>" + "".join(noticias) + "</ul>"
+
+def get_oportunidades_renda_fixa():
+    return """
+    <ul class="compact-list">
+        <li><b>IPCA+:</b> Juro real volta a 8% ao ano; especialistas veem oportunidade em títulos longos. <a class="news-link" href="https://www.seudinheiro.com/2026/onde-investir/renda-fixa-em-promocao-juros-sobem-apos-a-eleicao-e-xp-ve-oportunidade-em-titulos-que-agora-estao-mais-baratos-liga/" target="_blank">[Ler mais]</a></li>
+        <li><b>Prefixado:</b> Taxas entre 14% e 15% ao ano; XP prefere vencimentos mais curtos como o Prefixado 2029. <a class="news-link" href="https://www.infomoney.com.br/onde-investir/taxas-dispararam-e-hora-de-comprar-tesouro/" target="_blank">[Ler mais]</a></li>
+        <li><b>Tesouro Selic:</b> Indicado para dinheiro novo e liquidez em meio à volatilidade pós-eleição. <a class="news-link" href="https://www.infomoney.com.br/onde-investir/tesouro-direto-como-investir-agora-com-taxas-em-vaivem-apos-a-eleicao/" target="_blank">[Ler mais]</a></li>
+        <li><b>Crédito Privado:</b> Debêntures incentivadas, CRIs e CRAs com isenção de IR; BB-BI e Itaú têm seleções. <a class="news-link" href="https://investalk.bb.com.br/noticias/onde-investir/credito-privado-onde-investir-confira-a-selecao-bb-bi-de-outubro-26" target="_blank">[Ler mais]</a></li>
+        <li><b>CRIs/CRAs:</b> Spreads atrativos em meio à alta dos juros; seletividade é recomendada. <a class="news-link" href="https://valorinveste.globo.com/mercados/renda-fixa/noticia/2026/05/18/taxas-de-retorno-de-cris-cras-e-debentures-disparam-oportunidade-ou-alerta.ghtml" target="_blank">[Ler mais]</a></li>
+    </ul>
+    """
 
 # ==========================================
 # CABEÇALHO COMPACTO
@@ -180,9 +261,9 @@ rent_rf = (ganho_rf / inv_rf) * 100 if inv_rf > 0 else 0
 cor_rv = "#00FF00" if rent_rv >= 0 else "#FF4B4B"
 
 header_html = f"""
-<div class="header-container">
+<div class="header-container" id="topo">
 <div style="flex: 2; min-width: 200px;">
-<div class="header-title">💰 DinDin</div>
+<div class="header-title"><a href="#topo" target="_self" style="text-decoration: none; color: inherit;">💰 DinDin</a></div>
 <div class="header-subtitle">Seus investimentos e dicas em um só lugar.</div>
 </div>
 <div class="kpi-box">
@@ -195,17 +276,17 @@ header_html = f"""
 </div>
 <div class="kpi-box" style="flex: 0.8;">
 <div class="kpi-label">Rentab.</div>
-<div class="kpi-value" style="color: #00FF00;">{rent_geral:.2f}%</div>
+<div class="kpi-value" style="color: #00FF00;">{fmt_pct(rent_geral)}</div>
 </div>
 <div class="kpi-box" style="flex: 1.2;">
 <div class="kpi-label">Total Variável</div>
 <div class="kpi-value">{fmt_brl(inv_rv)}</div>
-<div class="kpi-sub" style="color: {cor_rv};">{rent_rv:.2f}%</div>
+<div class="kpi-sub" style="color: {cor_rv};">{fmt_pct(rent_rv)}</div>
 </div>
 <div class="kpi-box" style="flex: 1.2;">
 <div class="kpi-label">Total Fixo</div>
 <div class="kpi-value">{fmt_brl(inv_rf)}</div>
-<div class="kpi-sub" style="color: #00FF00;">{rent_rf:.2f}%</div>
+<div class="kpi-sub" style="color: #00FF00;">{fmt_pct(rent_rf)}</div>
 </div>
 <div class="kpi-meta">
 <div class="kpi-label">Meta 500k ({st.secrets['familia']['meta_progresso']})</div>
@@ -242,11 +323,10 @@ with aba_renda_variavel:
         c1.metric("Total Investido", fmt_brl(total_investido_rv))
         c2.metric("Posição Atual", fmt_brl(pos_rv))
         c3.metric("Ganho Total", fmt_brl(ganho_rv_real))
-        c4.metric("Rentabilidade Média", f"{rent_rv:.2f}%")
+        c4.metric("Rentabilidade Média", fmt_pct(rent_rv))
     
     st.write("")
     
-    # --- INÍCIO DA GRADE RESPONSIVA (4 colunas por linha) ---
     num_cols = 4
     num_rows = math.ceil(len(carteira_acoes) / num_cols)
 
@@ -276,14 +356,15 @@ with aba_renda_variavel:
                     cor = "#00FF00" if rsi < 35 else ("#FF4B4B" if rsi > 70 else "#808080")
                         
                     nome_empresa = dicionario_empresas.get(ativo, "")
+                    link = gerar_link_investidor10(ativo)
                         
                     with cols[i]:
                         with st.container(border=True):
-                            st.markdown(f"<div style='text-align: center; margin-top: -5px; margin-bottom: 2px; line-height: 1.1;'><span style='font-size: 16px; font-weight: bold; color: white;'>{ativo}</span><br><span style='font-size: 10px; color: #888;'>{nome_empresa}</span></div>", unsafe_allow_html=True)
+                            st.markdown(f"<div style='text-align: center; margin-top: -5px; margin-bottom: 2px; line-height: 1.1;'><a class='ticker-link' href='{link}' target='_blank' style='font-size: 16px; font-weight: bold; color: white;'>{ativo}</a><br><span style='font-size: 10px; color: #888;'>{nome_empresa}</span></div>", unsafe_allow_html=True)
                             
-                            st.metric(label="Cotação Atual", value=f"R$ {preco_atual:.2f}", delta=f"{variacao_pct:.2f}%", label_visibility="collapsed")
+                            st.metric(label="Cotação Atual", value=fmt_brl(preco_atual), delta=f"{variacao_pct:.2f}%".replace(".", ","), label_visibility="collapsed")
                             
-                            st.markdown(f"<div style='font-size: 12px; line-height: 1.3; margin-top: -10px; margin-bottom: 5px;'>📉 <b>Mín 6m:</b> R$ {min_6m:.2f}<br>⏳ <b>Mín 5a:</b> R$ {min_5a:.2f}{texto_data_5a}<br>📊 <b>RSI:</b> {rsi:.1f}<br>🤖 <b>Sinal:</b> <span style='color:{cor}; font-weight: bold;'>{sinal}</span><br>💼 <b>Share:</b> {share:.1f}%</div>", unsafe_allow_html=True)
+                            st.markdown(f"<div style='font-size: 12px; line-height: 1.3; margin-top: -10px; margin-bottom: 5px;'>📉 <b>Mín 6m:</b> {fmt_brl(min_6m)}<br>⏳ <b>Mín 5a:</b> {fmt_brl(min_5a)}{texto_data_5a}<br>📊 <b>RSI:</b> {rsi:.1f}".replace(".", ",") + f"<br>🤖 <b>Sinal:</b> <span style='color:{cor}; font-weight: bold;'>{sinal}</span><br>💼 <b>Share:</b> {share:.1f}%".replace(".", ",") + "</div>", unsafe_allow_html=True)
                             
                             st.progress(share / 100.0) 
 
@@ -317,7 +398,6 @@ with aba_renda_variavel:
                 })
 
     if oportunidades:
-        # --- GRADE RESPONSIVA DO RADAR ---
         num_rows_op = math.ceil(len(oportunidades) / num_cols)
         for row in range(num_rows_op):
             cols_op = st.columns(num_cols)
@@ -326,16 +406,27 @@ with aba_renda_variavel:
                 if idx_op < len(oportunidades):
                     op = oportunidades[idx_op]
                     nome_empresa_radar = dicionario_empresas.get(op['ativo'], "")
+                    link_op = gerar_link_investidor10(op['ativo'])
                     
                     with cols_op[i]:
                         with st.container(border=True):
-                            st.markdown(f"<div style='text-align: center; margin-top: -5px; margin-bottom: 2px; line-height: 1.1;'><span style='font-size: 16px; font-weight: bold; color: #00FF00;'>{op['ativo']}</span><br><span style='font-size: 10px; color: #888;'>{nome_empresa_radar}</span></div>", unsafe_allow_html=True)
+                            st.markdown(f"<div style='text-align: center; margin-top: -5px; margin-bottom: 2px; line-height: 1.1;'><a class='ticker-link' href='{link_op}' target='_blank' style='font-size: 16px; font-weight: bold; color: #00FF00;'>{op['ativo']}</a><br><span style='font-size: 10px; color: #888;'>{nome_empresa_radar}</span></div>", unsafe_allow_html=True)
                             
-                            st.metric(label="Preço", value=f"R$ {op['preco']:.2f}", delta=f"{op['variacao']:.2f}%", label_visibility="collapsed")
+                            st.metric(label="Preço", value=fmt_brl(op['preco']), delta=f"{op['variacao']:.2f}%".replace(".", ","), label_visibility="collapsed")
                             
-                            st.markdown(f"<div style='font-size: 12px; line-height: 1.3; margin-top: -10px; margin-bottom: 5px;'>🎯 <b>RSI:</b> {op['rsi']:.1f}<br>📉 <b>Mín 6m:</b> R$ {op['min_6m']:.2f}<br>⏳ <b>Mín 5a:</b> R$ {op['min_5a']:.2f}{op['data_min_5a']}</div>", unsafe_allow_html=True)
+                            st.markdown(f"<div style='font-size: 12px; line-height: 1.3; margin-top: -10px; margin-bottom: 5px;'>🎯 <b>RSI:</b> {op['rsi']:.1f}".replace(".", ",") + f"<br>📉 <b>Mín 6m:</b> {fmt_brl(op['min_6m'])}<br>⏳ <b>Mín 5a:</b> {fmt_brl(op['min_5a'])}{op['data_min_5a']}</div>", unsafe_allow_html=True)
     else:
         st.info("Nenhuma oportunidade no radar no momento.")
+
+    st.divider()
+    
+    st.markdown("#### 💡 Notícias dos Seus Ativos - Renda Variável (Últimas 24h)")
+    st.markdown(get_noticias_renda_variavel(), unsafe_allow_html=True)
+
+    st.divider()
+
+    st.markdown("#### 🚀 Oportunidades do Mercado - Fora da Carteira")
+    st.markdown(get_oportunidades_renda_variavel(), unsafe_allow_html=True)
 
 # ==========================================
 # ABA 2: RENDA FIXA (FAMÍLIA)
@@ -359,7 +450,7 @@ with aba_renda_fixa:
         c1.metric("Total Investido", fmt_brl(total_investido))
         c2.metric("Posição Atual", fmt_brl(total_posicao))
         c3.metric("Ganho Total", fmt_brl(total_ganho))
-        c4.metric("Rentabilidade Média", f"{rent_media:.2f}%")
+        c4.metric("Rentabilidade Média", fmt_pct(rent_media))
 
     st.write("")
     st.markdown("#### Detalhamento e Evolução Mês a Mês (2026)")
@@ -368,27 +459,37 @@ with aba_renda_fixa:
     
     df_fam.insert(5, "Share (%)", (df_fam["Investido (R$)"] / total_investido) * 100)
 
-    styled_fam = df_fam.style.map(style_taxa, subset=['Taxa (%)'])
-    styled_fam = styled_fam.set_properties(subset=['Share (%)'], **{'border-right': '2px solid #555'})
+    styled_fam = (df_fam.style
+                  .map(style_taxa, subset=['Taxa (%)'])
+                  .format({
+                      "Investido (R$)": lambda x: fmt_brl(x),
+                      "Posição Atual (R$)": lambda x: fmt_brl(x),
+                      "Ganho (R$)": lambda x: fmt_brl(x),
+                      "Taxa (%)": lambda x: fmt_pct(x),
+                      **{mes: lambda x: fmt_brl(x) for mes in ["Jan/26", "Fev/26", "Mar/26", "Abr/26", "Mai/26", "Jun/26", "Jul/26", "Ago/26", "Set/26", "Out/26", "Nov/26", "Dez/26"]},
+                      **{f"Tx {mes}": lambda x: fmt_pct(x) for mes in ["Jan/26", "Fev/26", "Mar/26", "Abr/26", "Mai/26", "Jun/26", "Jul/26", "Ago/26", "Set/26", "Out/26", "Nov/26", "Dez/26"]}
+                  })
+                  .set_properties(subset=['Share (%)'], **{'border-right': '2px solid #555'}))
 
     config_colunas = {
-        "Investido (R$)": st.column_config.NumberColumn(format="R$ %.2f"),
-        "Posição Atual (R$)": st.column_config.NumberColumn(format="R$ %.2f"),
-        "Ganho (R$)": st.column_config.NumberColumn(format="R$ %.2f"),
-        "Taxa (%)": st.column_config.NumberColumn(format="%.2f%%"),
         "Share (%)": st.column_config.ProgressColumn("Share (%)", format="%.1f%%", min_value=0, max_value=100)
     }
-    
-    meses = ["Jan/26", "Fev/26", "Mar/26", "Abr/26", "Mai/26", "Jun/26", "Jul/26", "Ago/26", "Set/26", "Out/26", "Nov/26", "Dez/26"]
-    for mes in meses:
-        config_colunas[mes] = st.column_config.NumberColumn(format="R$ %.2f")
-        config_colunas[f"Tx {mes}"] = st.column_config.NumberColumn(format="%.2f%%")
 
     st.dataframe(styled_fam, hide_index=True, use_container_width=True, column_config=config_colunas)
 
     st.write("")
     st.markdown("#### Evolução das Taxas - Família (2026)")
     st.line_chart(df_grafico_fam, height=300)
+
+    st.divider()
+    
+    st.markdown("#### 💡 Notícias dos Seus Títulos - Renda Fixa (Últimas 24h)")
+    st.markdown(get_noticias_renda_fixa(ativos_fam), unsafe_allow_html=True)
+
+    st.divider()
+
+    st.markdown("#### 🚀 Oportunidades do Mercado - Fora da Carteira")
+    st.markdown(get_oportunidades_renda_fixa(), unsafe_allow_html=True)
 
 # ==========================================
 # ABA 3: INVEST MARIA
@@ -412,7 +513,7 @@ with aba_maria:
         c1.metric("Total Investido", fmt_brl(total_investido_maria))
         c2.metric("Posição Atual", fmt_brl(total_posicao_maria))
         c3.metric("Ganho Total", fmt_brl(total_ganho_maria))
-        c4.metric("Rentabilidade Média", f"{rent_media_maria:.2f}%")
+        c4.metric("Rentabilidade Média", fmt_pct(rent_media_maria))
 
     st.write("")
     st.markdown("#### Detalhamento e Evolução Mês a Mês (2026)")
@@ -421,11 +522,30 @@ with aba_maria:
     
     df_maria.insert(5, "Share (%)", (df_maria["Investido (R$)"] / total_investido_maria) * 100)
 
-    styled_maria = df_maria.style.map(style_taxa, subset=['Taxa (%)'])
-    styled_maria = styled_maria.set_properties(subset=['Share (%)'], **{'border-right': '2px solid #555'})
+    styled_maria = (df_maria.style
+                    .map(style_taxa, subset=['Taxa (%)'])
+                    .format({
+                        "Investido (R$)": lambda x: fmt_brl(x),
+                        "Posição Atual (R$)": lambda x: fmt_brl(x),
+                        "Ganho (R$)": lambda x: fmt_brl(x),
+                        "Taxa (%)": lambda x: fmt_pct(x),
+                        **{mes: lambda x: fmt_brl(x) for mes in ["Jan/26", "Fev/26", "Mar/26", "Abr/26", "Mai/26", "Jun/26", "Jul/26", "Ago/26", "Set/26", "Out/26", "Nov/26", "Dez/26"]},
+                        **{f"Tx {mes}": lambda x: fmt_pct(x) for mes in ["Jan/26", "Fev/26", "Mar/26", "Abr/26", "Mai/26", "Jun/26", "Jul/26", "Ago/26", "Set/26", "Out/26", "Nov/26", "Dez/26"]}
+                    })
+                    .set_properties(subset=['Share (%)'], **{'border-right': '2px solid #555'}))
 
     st.dataframe(styled_maria, hide_index=True, use_container_width=True, column_config=config_colunas)
 
     st.write("")
     st.markdown("#### Evolução das Taxas - Maria (2026)")
     st.line_chart(df_grafico_maria, height=300)
+
+    st.divider()
+    
+    st.markdown("#### 💡 Notícias dos Seus Títulos - Renda Fixa (Últimas 24h)")
+    st.markdown(get_noticias_renda_fixa(ativos_maria), unsafe_allow_html=True)
+
+    st.divider()
+
+    st.markdown("#### 🚀 Oportunidades do Mercado - Fora da Carteira")
+    st.markdown(get_oportunidades_renda_fixa(), unsafe_allow_html=True)
