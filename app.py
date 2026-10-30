@@ -3,7 +3,7 @@ import yfinance as yf
 import pandas as pd
 
 # 1. Configuração da Página (Deve ser o primeiro comando Streamlit do app)
-st.set_page_config(page_title="Meus Investimentos", page_icon="💰", layout="wide")
+st.set_page_config(page_title="DinDin", page_icon="💰", layout="wide")
 
 # ==========================================
 # 2. TRAVA DE SEGURANÇA (PROTEÇÃO POR SENHA)
@@ -18,26 +18,40 @@ if not st.session_state.password_correct:
     password = st.text_input("Senha:", type="password")
     
     if st.button("Entrar"):
-        # Compara a senha digitada com a que está no arquivo secrets.toml
         if password == st.secrets["app_password"]:
             st.session_state.password_correct = True
             st.rerun()
         else:
             st.error("Senha incorreta. Tente novamente.")
             
-    st.stop() # Interrompe a execução aqui se a senha estiver errada
+    st.stop() 
 # ==========================================
 
 # A partir daqui, o código só roda se a pessoa acertar a senha!
 
-st.title("💰 DinDin")
-st.markdown("Seus investimentos e dicas em um só lugar.")
+# ==========================================
+# CABEÇALHO (Título + Posição Consolidada)
+# ==========================================
+col_titulo, col_posicao = st.columns([3, 1])
 
-# Função com cache para não sobrecarregar a API do Yahoo Finance
+with col_titulo:
+    st.title("💰 DinDin")
+    st.markdown("Seus investimentos e dicas em um só lugar.")
+
+with col_posicao:
+    # Adiciona um pequeno espaço no topo para alinhar com o título
+    st.write("") 
+    st.write("") 
+    # Puxa o total do secrets
+    total = st.secrets["geral"]["posicao_atual"]
+    st.metric(label="Posição Consolidada", value=total)
+
+st.divider()
+
+# Função com cache
 @st.cache_data(ttl=3600)
 def buscar_dados(ativo):
     ticker = yf.Ticker(f"{ativo}.SA")
-    # Puxa todo o histórico para calcularmos o mínimo histórico e de 12 meses
     return ticker.history(period="max")
 
 def calcular_rsi(dados, periodo=14):
@@ -57,10 +71,9 @@ aba_renda_variavel, aba_tesouro = st.tabs(["📈 Renda Variável (Ações e FIIs
 with aba_renda_variavel:
     st.subheader("Cotações e Sinais do Robô")
     
-    # Puxando a lista de ações do cofre
     carteira_acoes = st.secrets["renda_variavel"]["carteira_acoes"]
     
-    # Cria uma coluna para cada ação, garantindo que fiquem todas na horizontal
+    # Cria uma coluna para cada ação
     cols = st.columns(len(carteira_acoes))
 
     for i, ativo in enumerate(carteira_acoes):
@@ -74,43 +87,41 @@ with aba_renda_variavel:
             variacao_pct = (variacao_rs / preco_anterior) * 100
             rsi = calcular_rsi(hist['Close'])
             
-            # Cálculos de mínimo (Aproximadamente 252 dias úteis em 12 meses)
             min_12m = hist['Low'].tail(252).min()
             min_historico = hist['Low'].min()
             
             if rsi < 35:
                 sinal = "COMPRAR"
-                cor = "green"
+                cor = "#00FF00" # Verde vivo
             elif rsi > 70:
                 sinal = "VENDER"
-                cor = "red"
+                cor = "#FF4B4B" # Vermelho Streamlit
             else:
                 sinal = "MANTER"
-                cor = "gray"
+                cor = "#808080" # Cinza
                 
             with cols[i]:
                 with st.container(border=True):
-                    # Título do Ativo
-                    st.markdown(f"### **{ativo}**")
+                    # Título centralizado e sem margem extra
+                    st.markdown(f"<h4 style='text-align: center; margin-top: 0; margin-bottom: 5px;'>{ativo}</h4>", unsafe_allow_html=True)
                     
-                    # Cotação Atual e Variação
-                    st.metric(
-                        label="Atual", 
-                        value=f"R$ {preco_atual:.2f}", 
-                        delta=f"{variacao_pct:.2f}%"
+                    # Métrica principal
+                    st.metric(label="Cotação Atual", value=f"R$ {preco_atual:.2f}", delta=f"{variacao_pct:.2f}%", label_visibility="collapsed")
+                    
+                    # Usando HTML para juntar as informações e diminuir o espaçamento
+                    st.markdown(
+                        f"""
+                        <div style="font-size: 13px; line-height: 1.6; margin-bottom: 10px;">
+                            📉 <b>Mín 12m:</b> R$ {min_12m:.2f}<br>
+                            ⏳ <b>Mín Hist:</b> R$ {min_historico:.2f}<br>
+                            📊 <b>RSI:</b> {rsi:.1f}<br>
+                            🤖 <b>Sinal:</b> <span style="color:{cor}; font-weight: bold;">{sinal}</span>
+                        </div>
+                        """, 
+                        unsafe_allow_html=True
                     )
                     
-                    # Linhas com os novos dados (fonte menor para caber)
-                    st.caption(f"📉 Mín 12m: **R$ {min_12m:.2f}**")
-                    st.caption(f"⏳ Mín Hist: **R$ {min_historico:.2f}**")
-                    
-                    st.divider()
-                    
-                    # RSI e Sinal
-                    st.markdown(f"**RSI:** {rsi:.1f}")
-                    st.markdown(f"**Sinal:** :{cor}[**{sinal}**]")
-                    
-                    # Barra de progresso visual
+                    # Barra de progresso mais fina
                     st.progress(int(rsi))
 
 # ==========================================
@@ -122,7 +133,6 @@ with aba_tesouro:
     # --- CARTEIRA FAMÍLIA ---
     st.markdown("### 👨‍👩‍👧‍👦 Família - Meta 500k")
     
-    # Puxando os dados do cofre (secrets)
     df_familia = pd.DataFrame({
         "Ativo": st.secrets["familia"]["ativos"],
         "Investido (R$)": st.secrets["familia"]["investido"],
