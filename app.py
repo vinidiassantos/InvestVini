@@ -30,7 +30,7 @@ if not st.session_state.password_correct:
 
 # A partir daqui, o código só roda se a pessoa acertar a senha!
 
-st.title("💰 Din Din")
+st.title("💰 DinDin")
 st.markdown("Seus investimentos e dicas em um só lugar.")
 
 # Função com cache para não sobrecarregar a API do Yahoo Finance
