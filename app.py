@@ -17,52 +17,104 @@ st.markdown("""
     <style>
         .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
         header { visibility: hidden; }
-        
-        /* Ajustes para telas de celular */
-        @media (max-width: 768px) {
-            .block-container { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
-            .header-title { font-size: 1.8rem !important; }
-            .kpi-value { font-size: 1.1rem !important; }
-            .kpi-label { font-size: 0.7rem !important; }
-        }
-        
-        .header-container { 
-            display: flex; flex-wrap: wrap; gap: 15px; justify-content: space-between; align-items: flex-end; 
+
+        /* ===== HEADER CUSTOM ===== */
+        .header-container {
+            display: flex; flex-wrap: wrap; gap: 15px; justify-content: space-between; align-items: flex-end;
             margin-top: -30px; margin-bottom: 15px;
         }
         .header-title { font-size: 2.2rem; font-weight: 700; margin: 0; line-height: 1; }
         .header-subtitle { font-size: 0.9rem; color: #888; margin-top: 5px; }
         .kpi-box { text-align: left; flex: 1; min-width: 100px; }
         .kpi-label { font-size: 0.8rem; color: #888; margin-bottom: 3px; }
-        .kpi-value { font-size: 1.4rem; font-weight: 600; line-height: 1; }
+        .kpi-value { font-size: 1.4rem; font-weight: 600; line-height: 1; overflow-wrap: anywhere; }
         .kpi-sub { font-size: 0.8rem; margin-top: 3px; font-weight: bold; }
         .kpi-meta { text-align: right; flex: 1.5; min-width: 150px; }
-        
-        /* Estilo para os bullets compactos */
+
         .compact-list { margin-top: 0px; margin-bottom: 0px; padding-left: 20px; line-height: 1.4; font-size: 13px; }
         .compact-list li { margin-bottom: 4px; }
         .news-link { color: #4da6ff; text-decoration: none; font-size: 11px; margin-left: 5px; }
         .news-link:hover { text-decoration: underline; }
-        
-        /* Remove sublinhado dos links nos cards */
+
         a.ticker-link { text-decoration: none; }
         a.ticker-link:hover { text-decoration: underline; }
 
-        /* ESTILO RESPONSIVO PARA OS CARDS DE AÇÕES */
+        /* ===== CARDS DE AÇÕES (desktop) ===== */
         div[data-testid="column"] div[data-testid="stVerticalBlockBorderWrapper"] {
             width: 100% !important;
-            max-width: 250px !important; /* Um pouco mais largo para caber os novos dados */
+            max-width: 250px !important;
             margin: 0 auto !important;
             padding: 10px !important;
         }
-        
-        /* Ajusta o tamanho da fonte do valor principal */
         div[data-testid="column"] div[data-testid="stMetricValue"] {
             font-size: 1.6rem !important;
         }
-        /* Ajusta a fonte dos detalhes internos */
         div[data-testid="column"] div[data-testid="stMarkdownContainer"] p {
             font-size: 11px !important;
+        }
+
+        /* =====================================================
+           CELULAR / TABLET  (<= 768px)  — principal correção
+           ===================================================== */
+        @media (max-width: 768px) {
+            .block-container { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
+
+            /* Header */
+            .header-container { margin-top: 0 !important; gap: 10px !important; }
+            .header-title { font-size: 1.6rem !important; }
+            .header-subtitle { font-size: 0.8rem !important; }
+            .kpi-box { flex: 1 1 calc(50% - 5px) !important; min-width: 0 !important; }
+            .kpi-meta { flex: 1 1 100% !important; text-align: left !important; min-width: 0 !important; }
+            .kpi-label { font-size: 0.7rem !important; }
+            .kpi-value { font-size: 1.05rem !important; }
+            .kpi-sub { font-size: 0.7rem !important; }
+
+            /* Colunas viram 2 por linha em vez de 4 espremidas */
+            div[data-testid="stHorizontalBlock"] {
+                flex-wrap: wrap !important;
+                gap: 0.5rem !important;
+            }
+            div[data-testid="column"] {
+                flex: 1 1 calc(50% - 0.25rem) !important;
+                min-width: calc(50% - 0.25rem) !important;
+                max-width: calc(50% - 0.25rem) !important;
+            }
+            div[data-testid="column"] div[data-testid="stVerticalBlockBorderWrapper"] {
+                max-width: 100% !important;
+                padding: 8px !important;
+            }
+            div[data-testid="column"] div[data-testid="stMetricValue"] {
+                font-size: 1.15rem !important;
+            }
+            div[data-testid="column"] div[data-testid="stMarkdownContainer"] p {
+                font-size: 10px !important;
+            }
+
+            /* Tabs com rolagem horizontal, sem quebrar */
+            div[data-baseweb="tab-list"] {
+                overflow-x: auto !important;
+                flex-wrap: nowrap !important;
+                scrollbar-width: thin;
+            }
+            div[data-baseweb="tab"] {
+                white-space: nowrap !important;
+                font-size: 0.8rem !important;
+            }
+
+            /* Tabelas de Renda Fixa */
+            div[data-testid="stDataFrame"] { font-size: 0.7rem !important; }
+        }
+
+        /* =====================================================
+           CELULAR MUITO ESTREITO (<= 380px, ex: iPhone SE)
+           ===================================================== */
+        @media (max-width: 380px) {
+            .kpi-box { flex: 1 1 100% !important; }
+            div[data-testid="column"] {
+                flex: 1 1 100% !important;
+                min-width: 100% !important;
+                max-width: 100% !important;
+            }
         }
     </style>
 """, unsafe_allow_html=True)
