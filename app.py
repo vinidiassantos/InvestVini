@@ -6,11 +6,12 @@ import hashlib
 from datetime import datetime, timedelta
 import numpy as np 
 import math
+import altair as alt 
 
 # 1. Configuração da Página
 st.set_page_config(page_title="DinDin", page_icon="💰", layout="wide")
 
-# --- CSS PARA REMOVER ESPAÇOS DO TOPO E DO HEADER (AGORA RESPONSIVO) ---
+# --- CSS PARA REMOVER ESPAÇOS DO TOPO E DO HEADER ---
 st.markdown("""
     <style>
         .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
@@ -42,6 +43,18 @@ st.markdown("""
         /* Remove sublinhado dos links nos cards */
         a.ticker-link { text-decoration: none; }
         a.ticker-link:hover { text-decoration: underline; }
+
+        /* REDUZIR LARGURA E PADDING APENAS DOS CARDS DE AÇÕES */
+        div[data-testid="column"] div[data-testid="stVerticalBlockBorderWrapper"] {
+            max-width: 230px !important;
+            margin: 0 auto !important;
+            padding: 10px !important;
+        }
+        
+        /* Ajusta o tamanho da fonte do valor principal para caber melhor */
+        div[data-testid="column"] div[data-testid="stMetricValue"] {
+            font-size: 1.8rem !important;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -158,6 +171,8 @@ def gerar_tabela_renda_fixa(ativos, investidos, posicoes, ganhos, taxas_atuais):
         df[mes] = [0.0] * len(ativos)
         df[f"Tx {mes}"] = [0.0] * len(ativos)
 
+    meses_grafico = meses_2026[:10] # Apenas até Out/26
+    
     for i, ativo in enumerate(ativos):
         if "PRÉ" in ativo:
             base_rate = 12.5
@@ -170,7 +185,6 @@ def gerar_tabela_renda_fixa(ativos, investidos, posicoes, ganhos, taxas_atuais):
         
         for j, mes in enumerate(meses_2026):
             taxa_ano = base_rate + np.random.uniform(-0.8, 0.8)
-            taxas_ativo.append(taxa_ano)
             
             taxa_mensal = (1 + (taxa_ano / 100)) ** (1/12) - 1
             fator = (1 + taxa_mensal) ** (j + 1)
@@ -178,11 +192,12 @@ def gerar_tabela_renda_fixa(ativos, investidos, posicoes, ganhos, taxas_atuais):
             df.loc[df.index[i], mes] = posicoes[i] * fator
             df.loc[df.index[i], f"Tx {mes}"] = taxa_ano
             
+            if j < 10:
+                taxas_ativo.append(taxa_ano)
+            
         dados_grafico[ativo] = taxas_ativo
         
-    datas_dt = pd.to_datetime([f"2026-{str(i).zfill(2)}-01" for i in range(1, 13)])
-    df_grafico = pd.DataFrame(dados_grafico, index=datas_dt)
-    df_grafico = df_grafico[:'2026-10-01']
+    df_grafico = pd.DataFrame(dados_grafico, index=[m.split('/')[0] for m in meses_grafico])
     
     return df, df_grafico
 
@@ -459,6 +474,8 @@ with aba_renda_fixa:
     
     df_fam.insert(5, "Share (%)", (df_fam["Investido (R$)"] / total_investido) * 100)
 
+    cols_to_center_fam = [c for c in df_fam.columns if c != 'Ativo']
+
     styled_fam = (df_fam.style
                   .map(style_taxa, subset=['Taxa (%)'])
                   .format({
@@ -469,6 +486,7 @@ with aba_renda_fixa:
                       **{mes: lambda x: fmt_brl(x) for mes in ["Jan/26", "Fev/26", "Mar/26", "Abr/26", "Mai/26", "Jun/26", "Jul/26", "Ago/26", "Set/26", "Out/26", "Nov/26", "Dez/26"]},
                       **{f"Tx {mes}": lambda x: fmt_pct(x) for mes in ["Jan/26", "Fev/26", "Mar/26", "Abr/26", "Mai/26", "Jun/26", "Jul/26", "Ago/26", "Set/26", "Out/26", "Nov/26", "Dez/26"]}
                   })
+                  .set_properties(subset=cols_to_center_fam, **{'text-align': 'center'})
                   .set_properties(subset=['Share (%)'], **{'border-right': '2px solid #555'}))
 
     config_colunas = {
@@ -478,8 +496,40 @@ with aba_renda_fixa:
     st.dataframe(styled_fam, hide_index=True, use_container_width=True, column_config=config_colunas)
 
     st.write("")
-    st.markdown("#### Evolução das Taxas - Família (2026)")
-    st.line_chart(df_grafico_fam, height=300)
+    
+    # --- GRÁFICO CORRIGIDO ---
+    st.markdown("#### Histórico de Taxas")
+    
+    df_melt = df_grafico_fam.reset_index().melt('index', var_name='Ativo', value_name='Taxa')
+    df_melt = df_melt.rename(columns={'index': 'Mês'})
+    
+    # Filtra apenas o último mês para colocar o rótulo de texto
+    df_ultimo_mes = df_melt[df_melt['Mês'] == 'Out']
+
+    # Camada da linha
+    line = alt.Chart(df_melt).mark_line(point=True).encode(
+        x=alt.X('Mês:N', sort=None, title='Mês', axis=alt.Axis(labelAngle=0)),
+        y=alt.Y('Taxa:Q', title='Taxa Anualizada (%)', scale=alt.Scale(zero=False)), # zero=False evita que o gráfico fique achatado
+        color=alt.Color('Ativo:N', legend=alt.Legend(orient='bottom', columns=3)),
+        tooltip=[
+            alt.Tooltip('Mês:N', title='Mês'),
+            alt.Tooltip('Ativo:N', title='Ativo'),
+            alt.Tooltip('Taxa:Q', title='Taxa (%)', format='.2f')
+        ]
+    )
+
+    # Camada de texto (valores no final do gráfico)
+    text = alt.Chart(df_ultimo_mes).mark_text(
+        align='left', dx=5, fontSize=12, fontWeight='bold'
+    ).encode(
+        x=alt.X('Mês:N'),
+        y=alt.Y('Taxa:Q'),
+        text=alt.Text('Taxa:Q', format='.1f'),
+        color=alt.Color('Ativo:N', legend=None)
+    )
+
+    chart_fam = (line + text).properties(height=350).interactive()
+    st.altair_chart(chart_fam, use_container_width=True)
 
     st.divider()
     
@@ -522,6 +572,8 @@ with aba_maria:
     
     df_maria.insert(5, "Share (%)", (df_maria["Investido (R$)"] / total_investido_maria) * 100)
 
+    cols_to_center_maria = [c for c in df_maria.columns if c != 'Ativo']
+
     styled_maria = (df_maria.style
                     .map(style_taxa, subset=['Taxa (%)'])
                     .format({
@@ -532,13 +584,43 @@ with aba_maria:
                         **{mes: lambda x: fmt_brl(x) for mes in ["Jan/26", "Fev/26", "Mar/26", "Abr/26", "Mai/26", "Jun/26", "Jul/26", "Ago/26", "Set/26", "Out/26", "Nov/26", "Dez/26"]},
                         **{f"Tx {mes}": lambda x: fmt_pct(x) for mes in ["Jan/26", "Fev/26", "Mar/26", "Abr/26", "Mai/26", "Jun/26", "Jul/26", "Ago/26", "Set/26", "Out/26", "Nov/26", "Dez/26"]}
                     })
+                    .set_properties(subset=cols_to_center_maria, **{'text-align': 'center'})
                     .set_properties(subset=['Share (%)'], **{'border-right': '2px solid #555'}))
 
     st.dataframe(styled_maria, hide_index=True, use_container_width=True, column_config=config_colunas)
 
     st.write("")
-    st.markdown("#### Evolução das Taxas - Maria (2026)")
-    st.line_chart(df_grafico_maria, height=300)
+    
+    # --- GRÁFICO CORRIGIDO ---
+    st.markdown("#### Histórico de Taxas")
+    
+    df_melt_maria = df_grafico_maria.reset_index().melt('index', var_name='Ativo', value_name='Taxa')
+    df_melt_maria = df_melt_maria.rename(columns={'index': 'Mês'})
+    
+    df_ultimo_mes_maria = df_melt_maria[df_melt_maria['Mês'] == 'Out']
+
+    line_maria = alt.Chart(df_melt_maria).mark_line(point=True).encode(
+        x=alt.X('Mês:N', sort=None, title='Mês', axis=alt.Axis(labelAngle=0)),
+        y=alt.Y('Taxa:Q', title='Taxa Anualizada (%)', scale=alt.Scale(zero=False)),
+        color=alt.Color('Ativo:N', legend=alt.Legend(orient='bottom', columns=3)),
+        tooltip=[
+            alt.Tooltip('Mês:N', title='Mês'),
+            alt.Tooltip('Ativo:N', title='Ativo'),
+            alt.Tooltip('Taxa:Q', title='Taxa (%)', format='.2f')
+        ]
+    )
+
+    text_maria = alt.Chart(df_ultimo_mes_maria).mark_text(
+        align='left', dx=5, fontSize=12, fontWeight='bold'
+    ).encode(
+        x=alt.X('Mês:N'),
+        y=alt.Y('Taxa:Q'),
+        text=alt.Text('Taxa:Q', format='.1f'),
+        color=alt.Color('Ativo:N', legend=None)
+    )
+
+    chart_maria = (line_maria + text_maria).properties(height=350).interactive()
+    st.altair_chart(chart_maria, use_container_width=True)
 
     st.divider()
     
