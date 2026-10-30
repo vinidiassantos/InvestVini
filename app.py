@@ -29,6 +29,7 @@ if not st.session_state.password_correct:
 # ==========================================
 
 # A partir daqui, o código só roda se a pessoa acertar a senha!
+# E todos os dados (valores E nomes dos ativos) vêm do cofre (secrets.toml)
 
 st.title("💰 Dashboard de Investimentos")
 st.markdown("Acompanhe suas ações, FIIs e o Tesouro Direto em um só lugar.")
@@ -42,7 +43,8 @@ aba_renda_variavel, aba_tesouro = st.tabs(["📈 Renda Variável (Ações e FIIs
 with aba_renda_variavel:
     st.subheader("Cotações e Sinais do Robô")
     
-    carteira_acoes = ['VALE3', 'WEGE3', 'ITSA4', 'BOVA11', 'CEAB3', 'XPML11', 'MCCI11']
+    # Puxando a lista de ações do cofre
+    carteira_acoes = st.secrets["renda_variavel"]["carteira_acoes"]
     
     def calcular_rsi(dados, periodo=14):
         delta = dados.diff(1)
@@ -99,7 +101,7 @@ with aba_tesouro:
     
     # Puxando os dados do cofre (secrets)
     df_familia = pd.DataFrame({
-        "Ativo": ["IPCA+ 2032", "PRÉ 2032", "Selic 2031", "TOTAL FAMÍLIA"],
+        "Ativo": st.secrets["familia"]["ativos"],
         "Investido (R$)": st.secrets["familia"]["investido"],
         "Posição Atual (R$)": st.secrets["familia"]["posicao"],
         "Ganho (R$)": st.secrets["familia"]["ganho"],
@@ -130,7 +132,7 @@ with aba_tesouro:
     st.markdown("### 👩 Maria Invest")
     
     df_maria = pd.DataFrame({
-        "Ativo": ["IPCA+ 2029", "IPCA+ 2032", "IPCA+ 2035 c/juros", "PRÉ 2032", "PRÉ 2035 c/juros", "SELIC 2031", "TOTAL MARIA"],
+        "Ativo": st.secrets["maria"]["ativos"],
         "Investido (R$)": st.secrets["maria"]["investido"],
         "Posição Atual (R$)": st.secrets["maria"]["posicao"],
         "Ganho (R$)": st.secrets["maria"]["ganho"],
