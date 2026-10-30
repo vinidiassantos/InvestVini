@@ -1,16 +1,33 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
+import extra_streamlit_components as stx
+import hashlib
+from datetime import datetime, timedelta
 
 # 1. Configuração da Página
 st.set_page_config(page_title="DinDin", page_icon="💰", layout="wide")
 
+# Inicializa o gerenciador de cookies
+cookie_manager = stx.CookieManager(key="cookie_dindin")
+
 # ==========================================
-# 2. TRAVA DE SEGURANÇA (PROTEÇÃO POR SENHA)
+# 2. TRAVA DE SEGURANÇA (COM COOKIES)
 # ==========================================
+# Criamos um hash da sua senha para não salvar a senha em texto puro no cookie
+token_seguranca = hashlib.sha256(st.secrets["app_password"].encode()).hexdigest()
+
 if "password_correct" not in st.session_state:
     st.session_state.password_correct = False
 
+# Tenta ler o cookie para ver se o usuário já logou antes
+auth_cookie = cookie_manager.get(cookie="dindin_auth")
+
+# Se o cookie for válido, loga automaticamente
+if not st.session_state.password_correct and auth_cookie == token_seguranca:
+    st.session_state.password_correct = True
+
+# Se não estiver logado, mostra a tela de senha
 if not st.session_state.password_correct:
     st.title("🔒 Acesso Restrito")
     st.write("Este aplicativo é privado. Insira a senha para visualizar os investimentos.")
@@ -20,6 +37,12 @@ if not st.session_state.password_correct:
     if st.button("Entrar"):
         if password == st.secrets["app_password"]:
             st.session_state.password_correct = True
+            # Salva o cookie no navegador por 7 dias
+            cookie_manager.set(
+                "dindin_auth", 
+                token_seguranca, 
+                expires_at=datetime.now() + timedelta(days=7)
+            )
             st.rerun()
         else:
             st.error("Senha incorreta. Tente novamente.")
@@ -27,12 +50,19 @@ if not st.session_state.password_correct:
     st.stop() 
 # ==========================================
 
-# A partir daqui, o código só roda se a pessoa acertar a senha!
+# A partir daqui, o código só roda se a pessoa estiver logada!
+
+# Botão de Logout na barra lateral
+with st.sidebar:
+    st.write("---")
+    if st.button("Sair do App"):
+        cookie_manager.delete("dindin_auth")
+        st.session_state.password_correct = False
+        st.rerun()
 
 # ==========================================
 # CABEÇALHO (Título + KPIs Consolidados + Meta)
 # ==========================================
-# Dividindo o topo em 5 colunas para caber tudo
 col_titulo, col_kpi1, col_kpi2, col_kpi3, col_kpi4 = st.columns([2, 1, 1, 1, 1.2])
 
 with col_titulo:
@@ -57,7 +87,6 @@ with col_kpi3:
 with col_kpi4:
     st.write("")
     st.write("")
-    # Trazendo a Meta para o topo
     st.metric(label="Meta Família", value=st.secrets["familia"]["meta_progresso"])
     st.caption(f"Falta: {st.secrets['familia']['meta_falta']}")
 
@@ -140,7 +169,7 @@ with aba_renda_variavel:
 with aba_tesouro:
     st.subheader("Visão de Renda Fixa")
     
-    # --- CARTEIRA FAMÍLIA (Separada visualmente) ---
+    # --- CARTEIRA FAMÍLIA ---
     with st.container(border=True):
         st.markdown("### 👨‍👩‍👧‍👦 Família - Meta 500k")
         
@@ -164,9 +193,9 @@ with aba_tesouro:
             }
         )
 
-    st.write("") # Espaçamento entre os containers
+    st.write("") 
 
-    # --- CARTEIRA MARIA (Separada visualmente e INTACTA) ---
+    # --- CARTEIRA MARIA (Intacta) ---
     with st.container(border=True):
         st.markdown("### 👩 Maria Invest")
         
