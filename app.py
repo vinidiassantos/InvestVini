@@ -30,8 +30,8 @@ if not st.session_state.password_correct:
 
 # A partir daqui, o código só roda se a pessoa acertar a senha!
 
-st.title("💰 Dashboard de Investimentos")
-st.markdown("Acompanhe suas ações, FIIs e o Tesouro Direto em um só lugar.")
+st.title("💰 Din Din")
+st.markdown("Seus investimentos e dicas em um só lugar.")
 
 # Função com cache para não sobrecarregar a API do Yahoo Finance
 @st.cache_data(ttl=3600)
