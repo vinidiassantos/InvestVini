@@ -29,10 +29,24 @@ if not st.session_state.password_correct:
 # ==========================================
 
 # A partir daqui, o código só roda se a pessoa acertar a senha!
-# E todos os dados (valores E nomes dos ativos) vêm do cofre (secrets.toml)
 
 st.title("💰 Dashboard de Investimentos")
 st.markdown("Acompanhe suas ações, FIIs e o Tesouro Direto em um só lugar.")
+
+# Função com cache para não sobrecarregar a API do Yahoo Finance
+@st.cache_data(ttl=3600)
+def buscar_dados(ativo):
+    ticker = yf.Ticker(f"{ativo}.SA")
+    # Puxa todo o histórico para calcularmos o mínimo histórico e de 12 meses
+    return ticker.history(period="max")
+
+def calcular_rsi(dados, periodo=14):
+    delta = dados.diff(1)
+    ganho = (delta.where(delta > 0, 0)).rolling(window=periodo).mean()
+    perda = (-delta.where(delta < 0, 0)).rolling(window=periodo).mean()
+    rs = ganho / perda
+    rsi = 100 - (100 / (1 + rs))
+    return rsi.iloc[-1]
 
 # Criando as Abas
 aba_renda_variavel, aba_tesouro = st.tabs(["📈 Renda Variável (Ações e FIIs)", "🏦 Tesouro Direto"])
@@ -46,19 +60,11 @@ with aba_renda_variavel:
     # Puxando a lista de ações do cofre
     carteira_acoes = st.secrets["renda_variavel"]["carteira_acoes"]
     
-    def calcular_rsi(dados, periodo=14):
-        delta = dados.diff(1)
-        ganho = (delta.where(delta > 0, 0)).rolling(window=periodo).mean()
-        perda = (-delta.where(delta < 0, 0)).rolling(window=periodo).mean()
-        rs = ganho / perda
-        rsi = 100 - (100 / (1 + rs))
-        return rsi.iloc[-1]
-
-    cols = st.columns(3)
+    # Cria uma coluna para cada ação, garantindo que fiquem todas na horizontal
+    cols = st.columns(len(carteira_acoes))
 
     for i, ativo in enumerate(carteira_acoes):
-        ticker = yf.Ticker(f"{ativo}.SA")
-        hist = ticker.history(period="2mo")
+        hist = buscar_dados(ativo)
         
         if not hist.empty:
             preco_atual = hist['Close'].iloc[-1]
@@ -68,26 +74,43 @@ with aba_renda_variavel:
             variacao_pct = (variacao_rs / preco_anterior) * 100
             rsi = calcular_rsi(hist['Close'])
             
+            # Cálculos de mínimo (Aproximadamente 252 dias úteis em 12 meses)
+            min_12m = hist['Low'].tail(252).min()
+            min_historico = hist['Low'].min()
+            
             if rsi < 35:
-                sinal = "🟢 COMPRAR"
+                sinal = "COMPRAR"
                 cor = "green"
             elif rsi > 70:
-                sinal = "🔴 VENDER"
+                sinal = "VENDER"
                 cor = "red"
             else:
-                sinal = "⚪ MANTER"
+                sinal = "MANTER"
                 cor = "gray"
                 
-            with cols[i % 3]:
+            with cols[i]:
                 with st.container(border=True):
-                    st.subheader(ativo)
+                    # Título do Ativo
+                    st.markdown(f"### **{ativo}**")
+                    
+                    # Cotação Atual e Variação
                     st.metric(
-                        label="Cotação Atual", 
+                        label="Atual", 
                         value=f"R$ {preco_atual:.2f}", 
-                        delta=f"{variacao_pct:.2f}% (R$ {variacao_rs:.2f})"
+                        delta=f"{variacao_pct:.2f}%"
                     )
+                    
+                    # Linhas com os novos dados (fonte menor para caber)
+                    st.caption(f"📉 Mín 12m: **R$ {min_12m:.2f}**")
+                    st.caption(f"⏳ Mín Hist: **R$ {min_historico:.2f}**")
+                    
+                    st.divider()
+                    
+                    # RSI e Sinal
                     st.markdown(f"**RSI:** {rsi:.1f}")
-                    st.markdown(f"**Sinal do Robô:** :{cor}[{sinal}]")
+                    st.markdown(f"**Sinal:** :{cor}[**{sinal}**]")
+                    
+                    # Barra de progresso visual
                     st.progress(int(rsi))
 
 # ==========================================
