@@ -30,17 +30,17 @@ if not st.session_state.password_correct:
 # A partir daqui, o código só roda se a pessoa acertar a senha!
 
 # ==========================================
-# CABEÇALHO (Título + KPIs Consolidados)
+# CABEÇALHO (Título + KPIs Consolidados + Meta)
 # ==========================================
-# Divide o topo em 4 colunas (Título ocupa mais espaço, os KPIs dividem o resto)
-col_titulo, col_kpi1, col_kpi2, col_kpi3 = st.columns([2, 1, 1, 1])
+# Dividindo o topo em 5 colunas para caber tudo
+col_titulo, col_kpi1, col_kpi2, col_kpi3, col_kpi4 = st.columns([2, 1, 1, 1, 1.2])
 
 with col_titulo:
     st.title("💰 DinDin")
     st.markdown("Seus investimentos e dicas em um só lugar.")
 
 with col_kpi1:
-    st.write("") # Espaçamento para alinhar com o título
+    st.write("") 
     st.write("")
     st.metric(label="Total Investido", value=st.secrets["geral"]["total_investido"])
 
@@ -53,6 +53,13 @@ with col_kpi3:
     st.write("")
     st.write("")
     st.metric(label="Rentabilidade Global", value=st.secrets["geral"]["rentabilidade_global"])
+
+with col_kpi4:
+    st.write("")
+    st.write("")
+    # Trazendo a Meta para o topo
+    st.metric(label="Meta Família", value=st.secrets["familia"]["meta_progresso"])
+    st.caption(f"Falta: {st.secrets['familia']['meta_falta']}")
 
 st.divider()
 
@@ -128,61 +135,57 @@ with aba_renda_variavel:
                     st.progress(int(rsi))
 
 # ==========================================
-# ABA 2: TESOURO DIRETO (Lendo do Secrets)
+# ABA 2: TESOURO DIRETO (Separado por Containers)
 # ==========================================
 with aba_tesouro:
     st.subheader("Visão de Renda Fixa")
     
-    # --- CARTEIRA FAMÍLIA ---
-    st.markdown("### 👨‍👩‍👧‍👦 Família - Meta 500k")
-    
-    df_familia = pd.DataFrame({
-        "Ativo": st.secrets["familia"]["ativos"],
-        "Investido (R$)": st.secrets["familia"]["investido"],
-        "Posição Atual (R$)": st.secrets["familia"]["posicao"],
-        "Ganho (R$)": st.secrets["familia"]["ganho"],
-        "Rentabilidade (%)": st.secrets["familia"]["rentabilidade"]
-    })
-    
-    st.dataframe(
-        df_familia, 
-        hide_index=True, 
-        use_container_width=True,
-        column_config={
-            "Investido (R$)": st.column_config.NumberColumn(format="R$ %.2f"),
-            "Posição Atual (R$)": st.column_config.NumberColumn(format="R$ %.2f"),
-            "Ganho (R$)": st.column_config.NumberColumn(format="R$ %.2f"),
-            "Rentabilidade (%)": st.column_config.NumberColumn(format="%.2f%%")
-        }
-    )
-    
-    col_meta1, col_meta2 = st.columns(2)
-    with col_meta1:
-        st.metric(label="Falta para a Meta (R$ 500.000)", value=st.secrets["familia"]["meta_falta"])
-    with col_meta2:
-        st.metric(label="Progresso da Meta", value=st.secrets["familia"]["meta_progresso"])
-    
-    st.divider()
+    # --- CARTEIRA FAMÍLIA (Separada visualmente) ---
+    with st.container(border=True):
+        st.markdown("### 👨‍👩‍👧‍👦 Família - Meta 500k")
+        
+        df_familia = pd.DataFrame({
+            "Ativo": st.secrets["familia"]["ativos"],
+            "Investido (R$)": st.secrets["familia"]["investido"],
+            "Posição Atual (R$)": st.secrets["familia"]["posicao"],
+            "Ganho (R$)": st.secrets["familia"]["ganho"],
+            "Rentabilidade (%)": st.secrets["familia"]["rentabilidade"]
+        })
+        
+        st.dataframe(
+            df_familia, 
+            hide_index=True, 
+            use_container_width=True,
+            column_config={
+                "Investido (R$)": st.column_config.NumberColumn(format="R$ %.2f"),
+                "Posição Atual (R$)": st.column_config.NumberColumn(format="R$ %.2f"),
+                "Ganho (R$)": st.column_config.NumberColumn(format="R$ %.2f"),
+                "Rentabilidade (%)": st.column_config.NumberColumn(format="%.2f%%")
+            }
+        )
 
-    # --- CARTEIRA MARIA (Intacta) ---
-    st.markdown("### 👩 Maria Invest")
-    
-    df_maria = pd.DataFrame({
-        "Ativo": st.secrets["maria"]["ativos"],
-        "Investido (R$)": st.secrets["maria"]["investido"],
-        "Posição Atual (R$)": st.secrets["maria"]["posicao"],
-        "Ganho (R$)": st.secrets["maria"]["ganho"],
-        "Rentabilidade (%)": st.secrets["maria"]["rentabilidade"]
-    })
-    
-    st.dataframe(
-        df_maria, 
-        hide_index=True, 
-        use_container_width=True,
-        column_config={
-            "Investido (R$)": st.column_config.NumberColumn(format="R$ %.2f"),
-            "Posição Atual (R$)": st.column_config.NumberColumn(format="R$ %.2f"),
-            "Ganho (R$)": st.column_config.NumberColumn(format="R$ %.2f"),
-            "Rentabilidade (%)": st.column_config.NumberColumn(format="%.2f%%")
-        }
-    )
+    st.write("") # Espaçamento entre os containers
+
+    # --- CARTEIRA MARIA (Separada visualmente e INTACTA) ---
+    with st.container(border=True):
+        st.markdown("### 👩 Maria Invest")
+        
+        df_maria = pd.DataFrame({
+            "Ativo": st.secrets["maria"]["ativos"],
+            "Investido (R$)": st.secrets["maria"]["investido"],
+            "Posição Atual (R$)": st.secrets["maria"]["posicao"],
+            "Ganho (R$)": st.secrets["maria"]["ganho"],
+            "Rentabilidade (%)": st.secrets["maria"]["rentabilidade"]
+        })
+        
+        st.dataframe(
+            df_maria, 
+            hide_index=True, 
+            use_container_width=True,
+            column_config={
+                "Investido (R$)": st.column_config.NumberColumn(format="R$ %.2f"),
+                "Posição Atual (R$)": st.column_config.NumberColumn(format="R$ %.2f"),
+                "Ganho (R$)": st.column_config.NumberColumn(format="R$ %.2f"),
+                "Rentabilidade (%)": st.column_config.NumberColumn(format="%.2f%%")
+            }
+        )
