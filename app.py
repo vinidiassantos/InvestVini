@@ -2,7 +2,7 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 
-# 1. Configuração da Página (Deve ser o primeiro comando Streamlit do app)
+# 1. Configuração da Página
 st.set_page_config(page_title="DinDin", page_icon="💰", layout="wide")
 
 # ==========================================
@@ -30,21 +30,29 @@ if not st.session_state.password_correct:
 # A partir daqui, o código só roda se a pessoa acertar a senha!
 
 # ==========================================
-# CABEÇALHO (Título + Posição Consolidada)
+# CABEÇALHO (Título + KPIs Consolidados)
 # ==========================================
-col_titulo, col_posicao = st.columns([3, 1])
+# Divide o topo em 4 colunas (Título ocupa mais espaço, os KPIs dividem o resto)
+col_titulo, col_kpi1, col_kpi2, col_kpi3 = st.columns([2, 1, 1, 1])
 
 with col_titulo:
     st.title("💰 DinDin")
     st.markdown("Seus investimentos e dicas em um só lugar.")
 
-with col_posicao:
-    # Adiciona um pequeno espaço no topo para alinhar com o título
-    st.write("") 
-    st.write("") 
-    # Puxa o total do secrets
-    total = st.secrets["geral"]["posicao_atual"]
-    st.metric(label="Posição Consolidada", value=total)
+with col_kpi1:
+    st.write("") # Espaçamento para alinhar com o título
+    st.write("")
+    st.metric(label="Total Investido", value=st.secrets["geral"]["total_investido"])
+
+with col_kpi2:
+    st.write("")
+    st.write("")
+    st.metric(label="Posição Atual", value=st.secrets["geral"]["posicao_atual"])
+
+with col_kpi3:
+    st.write("")
+    st.write("")
+    st.metric(label="Rentabilidade Global", value=st.secrets["geral"]["rentabilidade_global"])
 
 st.divider()
 
@@ -73,7 +81,6 @@ with aba_renda_variavel:
     
     carteira_acoes = st.secrets["renda_variavel"]["carteira_acoes"]
     
-    # Cria uma coluna para cada ação
     cols = st.columns(len(carteira_acoes))
 
     for i, ativo in enumerate(carteira_acoes):
@@ -92,23 +99,20 @@ with aba_renda_variavel:
             
             if rsi < 35:
                 sinal = "COMPRAR"
-                cor = "#00FF00" # Verde vivo
+                cor = "#00FF00"
             elif rsi > 70:
                 sinal = "VENDER"
-                cor = "#FF4B4B" # Vermelho Streamlit
+                cor = "#FF4B4B"
             else:
                 sinal = "MANTER"
-                cor = "#808080" # Cinza
+                cor = "#808080"
                 
             with cols[i]:
                 with st.container(border=True):
-                    # Título centralizado e sem margem extra
                     st.markdown(f"<h4 style='text-align: center; margin-top: 0; margin-bottom: 5px;'>{ativo}</h4>", unsafe_allow_html=True)
                     
-                    # Métrica principal
                     st.metric(label="Cotação Atual", value=f"R$ {preco_atual:.2f}", delta=f"{variacao_pct:.2f}%", label_visibility="collapsed")
                     
-                    # Usando HTML para juntar as informações e diminuir o espaçamento
                     st.markdown(
                         f"""
                         <div style="font-size: 13px; line-height: 1.6; margin-bottom: 10px;">
@@ -121,7 +125,6 @@ with aba_renda_variavel:
                         unsafe_allow_html=True
                     )
                     
-                    # Barra de progresso mais fina
                     st.progress(int(rsi))
 
 # ==========================================
@@ -161,7 +164,7 @@ with aba_tesouro:
     
     st.divider()
 
-    # --- CARTEIRA MARIA ---
+    # --- CARTEIRA MARIA (Intacta) ---
     st.markdown("### 👩 Maria Invest")
     
     df_maria = pd.DataFrame({
@@ -183,12 +186,3 @@ with aba_tesouro:
             "Rentabilidade (%)": st.column_config.NumberColumn(format="%.2f%%")
         }
     )
-
-    st.divider()
-
-    # --- RESUMO GERAL ---
-    st.markdown("### 📊 Resumo Geral Consolidado")
-    col_res1, col_res2, col_res3 = st.columns(3)
-    col_res1.metric("Total Investido", st.secrets["geral"]["total_investido"])
-    col_res2.metric("Posição Atual", st.secrets["geral"]["posicao_atual"])
-    col_res3.metric("Rentabilidade Global", st.secrets["geral"]["rentabilidade_global"])
