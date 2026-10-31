@@ -42,9 +42,9 @@ st.markdown("""
         /* ===== CSS PARA O RESUMO (SUBSTITUI AS COLUNAS) ===== */
         .resumo-container {
             display: flex; flex-wrap: wrap; gap: 10px;
-            background-color: rgba(128, 128, 128, 0.1); /* Fundo cinza translúcido que funciona no claro e escuro */
+            background-color: rgba(128, 128, 128, 0.1);
             padding: 15px; border-radius: 8px; border: 1px solid rgba(128, 128, 128, 0.2);
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
         .resumo-box { flex: 1 1 calc(25% - 10px); min-width: 140px; text-align: center; }
         .resumo-label { font-size: 0.85rem; color: gray; margin-bottom: 5px; }
@@ -60,11 +60,9 @@ st.markdown("""
             .kpi-box { flex: 1 1 calc(50% - 5px) !important; min-width: 0 !important; }
             .kpi-meta { flex: 1 1 100% !important; text-align: left !important; }
             
-            /* Resumo 2x2 no celular */
             .resumo-box { flex: 1 1 calc(50% - 10px); margin-bottom: 10px; }
             .resumo-value { font-size: 1.2rem; }
 
-            /* MÁGICA DOS CARDS: 2 por linha no celular */
             div[data-testid="stHorizontalBlock"] {
                 flex-wrap: wrap !important;
                 gap: 10px !important;
@@ -74,7 +72,6 @@ st.markdown("""
                 min-width: calc(50% - 5px) !important;
                 max-width: calc(50% - 5px) !important;
             }
-            /* Ajuste dos cards para não vazar */
             div[data-testid="column"] div[data-testid="stVerticalBlockBorderWrapper"] {
                 max-width: 100% !important;
                 padding: 8px !important;
@@ -85,12 +82,9 @@ st.markdown("""
             div[data-testid="column"] div[data-testid="stMarkdownContainer"] p {
                 font-size: 11px !important;
             }
-            
-            /* Tabs com scroll */
             div[data-baseweb="tab-list"] { overflow-x: auto !important; flex-wrap: nowrap !important; }
         }
 
-        /* CELULAR MUITO ESTREITO (<= 380px) */
         @media (max-width: 380px) {
             .kpi-box { flex: 1 1 100% !important; }
             .resumo-box { flex: 1 1 100% !important; }
@@ -174,7 +168,6 @@ def formatar_data_min(data_timestamp):
 def style_taxa(val):
     return f'color: {"#FF4B4B" if val < 0 else "inherit"}; font-weight: bold;'
 
-# --- FUNÇÃO CONSOLIDADA: API DADOSB3 ---
 @st.cache_data(ttl=86400) 
 def buscar_metricas_fundamentalistas(ticker):
     try:
@@ -253,10 +246,10 @@ def gerar_tabela_renda_fixa(ativos, investidos, posicoes, ganhos, taxas_atuais):
     for mes in meses_2026: df[mes] = [0.0] * len(ativos); df[f"Tx {mes}"] = [0.0] * len(ativos)
     meses_grafico = meses_2026[:10]
     for i, ativo in enumerate(ativos):
-        base_rate = 12.5 if "PRÉ" in ativo else (11.0 if "Selic" in ativo else 6.5)
+        base_rate = taxas_atuais[i] if taxas_atuais[i] > 0 else 10.0
         taxas_ativo = []
         for j, mes in enumerate(meses_2026):
-            taxa_ano = base_rate + np.random.uniform(-0.8, 0.8)
+            taxa_ano = base_rate + np.random.uniform(-0.5, 0.5)
             taxa_mensal = (1 + (taxa_ano / 100)) ** (1/12) - 1
             df.loc[df.index[i], mes] = posicoes[i] * ((1 + taxa_mensal) ** (j + 1))
             df.loc[df.index[i], f"Tx {mes}"] = taxa_ano
@@ -271,50 +264,53 @@ def gerar_tabela_renda_fixa(ativos, investidos, posicoes, ganhos, taxas_atuais):
 def get_noticias_renda_variavel():
     return """
     <ul class="compact-list">
-        <li><b>VALE3:</b> Ação sobe forte após 'call' positiva sobre câmbio e metais, mesmo com lucro em queda. <a class="news-link" href="https://valor.globo.com/financas/noticia/2026/10/30/acoes-da-vale-vale3-sobem-forte-apos-call-com-perspectiva-mais-positiva-sobre-cambio-e-metais.ghtml" target="_blank">[Ler mais]</a></li>
-        <li><b>WEGE3:</b> Dispara 4,4% hoje e acumula alta de 15,3% na semana, na contramão do Ibovespa. <a class="news-link" href="https://br.investing.com/analysis/wege3-dispara-44-hoje-weg-sobe-153-na-semana-enquanto-o-ibovespa-cai-200480439" target="_blank">[Ler mais]</a></li>
-        <li><b>ITSA4:</b> Holding negocia perto de R$ 13,00 após correção; analistas veem oportunidade em bancos. <a class="news-link" href="https://opetroleo.com.br/bolsa-em-queda-tres-acoes-para-comecar-a-investir-com-apenas-r-300-entram-no-radar/" target="_blank">[Ler mais]</a></li>
+        <li><b>VALE3:</b> Ação sobe forte após 'call' positiva sobre câmbio e metais. <a class="news-link" href="https://valor.globo.com" target="_blank">[Ler mais]</a></li>
+        <li><b>WEGE3:</b> Dispara 4,4% hoje e acumula alta de 15,3% na semana. <a class="news-link" href="https://br.investing.com" target="_blank">[Ler mais]</a></li>
     </ul>
     """
 
 def get_oportunidades_renda_variavel():
     return """
     <ul class="compact-list">
-        <li><b>Small Caps:</b> BB-BI inclui <b>Pine (PINE4)</b> e <b>Dexco (DXCO3)</b> na carteira de novembro. <a class="news-link" href="https://investalk.bb.com.br/noticias/onde-investir/carteira-smallcaps-novembro-26" target="_blank">[Ler mais]</a></li>
-        <li><b>Exportadoras:</b> Dólar alto coloca <b>Suzano (SUZB3)</b>, <b>Gerdau (GGBR4)</b> e <b>Embraer (EMBJ3)</b> no radar. <a class="news-link" href="https://www.infomoney.com.br/mercados/dolar-forte-apos-eleicao-coloca-exportadoras-no-radar-quais-sao-as-acoes-preferidas/" target="_blank">[Ler mais]</a></li>
+        <li><b>Small Caps:</b> BB-BI inclui <b>Pine (PINE4)</b> e <b>Dexco (DXCO3)</b> na carteira. <a class="news-link" href="https://investalk.bb.com.br" target="_blank">[Ler mais]</a></li>
+        <li><b>Exportadoras:</b> Dólar alto coloca <b>Suzano (SUZB3)</b> no radar. <a class="news-link" href="https://www.infomoney.com.br" target="_blank">[Ler mais]</a></li>
     </ul>
     """
 
 def get_noticias_renda_fixa(titulos):
     noticias = []
     for titulo in titulos:
-        noticias.append(f'<li><b>{titulo}:</b> Acompanhe as taxas do Tesouro Direto hoje; juro real próximo de 8% ao ano. <a class="news-link" href="https://www.infomoney.com.br/onde-investir/tesouro-direto-hoje-taxas-recua-de-leve-mas-prefixado-2032-ainda-rende-1538/" target="_blank">[Ler mais]</a></li>')
+        noticias.append(f'<li><b>{titulo}:</b> Acompanhe as taxas do Tesouro Direto hoje. <a class="news-link" href="https://www.infomoney.com.br" target="_blank">[Ler mais]</a></li>')
     return "<ul class='compact-list'>" + "".join(noticias) + "</ul>"
 
 def get_oportunidades_renda_fixa():
     return """
     <ul class="compact-list">
-        <li><b>IPCA+:</b> Juro real volta a 8% ao ano; especialistas veem oportunidade em títulos longos. <a class="news-link" href="https://www.seudinheiro.com/2026/onde-investir/renda-fixa-em-promocao-juros-sobem-apos-a-eleicao-e-xp-ve-oportunidade-em-titulos-que-agora-estao-mais-baratos-liga/" target="_blank">[Ler mais]</a></li>
+        <li><b>IPCA+:</b> Juro real volta a 8% ao ano; oportunidade em títulos longos. <a class="news-link" href="https://www.seudinheiro.com" target="_blank">[Ler mais]</a></li>
     </ul>
     """
 
 # ==========================================
-# CABEÇALHO COMPACTO
+# VALORES ATUALIZADOS (HARDCODED) - NOVEMBRO
 # ==========================================
-inv_geral = st.secrets["familia"]["investido"][-1]
-pos_geral = st.secrets["familia"]["posicao"][-1]
-rent_geral = st.secrets["familia"]["rentabilidade"][-1]
+inv_geral = 145521.18
+pos_geral = 155096.10
+rent_geral = 6.59
 
-inv_rv = sum(st.secrets["renda_variavel"].get("investido_renda_variavel", []))
-pos_rv = st.secrets["renda_variavel"].get("total_posicao", 0.0)
-rent_rv = st.secrets["renda_variavel"].get("total_rentabilidade", 0.0)
+inv_rv = 1147.50
+pos_rv = 1126.55
+rent_rv = -2.81
+ganho_rv_real = -32.21
 
-inv_rf = sum(st.secrets["familia"]["investido"][:-1])
-ganho_rf = sum(st.secrets["familia"]["ganho"][:-1])
-rent_rf = (ganho_rf / inv_rf) * 100 if inv_rf > 0 else 0
+inv_rf = 101650.36
+ganho_rf = 5051.14
+rent_rf = 4.97
 
 cor_rv = "#00FF00" if rent_rv >= 0 else "#FF4B4B"
 
+# ==========================================
+# CABEÇALHO COMPACTO
+# ==========================================
 header_html = f"""
 <div class="header-container" id="topo">
 <div style="flex: 2; min-width: 200px;">
@@ -344,8 +340,8 @@ header_html = f"""
 <div class="kpi-sub" style="color: #00FF00;">{fmt_pct(rent_rf)}</div>
 </div>
 <div class="kpi-meta">
-<div class="kpi-label">Meta 500k ({st.secrets['familia']['meta_progresso']})</div>
-<div class="kpi-value" style="font-size: 1.2rem;">Atual: {st.secrets['familia']['meta_falta']}</div>
+<div class="kpi-label">Meta 500k (21.0%)</div>
+<div class="kpi-value" style="font-size: 1.2rem;">Atual: R$ 393.319,45</div>
 </div>
 </div>
 <hr style="margin: 0px 0 15px 0; border: 0; border-top: 1px solid #333;">
@@ -365,12 +361,10 @@ aba_renda_variavel, aba_renda_fixa, aba_maria = st.tabs([
 with aba_renda_variavel:
     st.subheader("Sua Carteira de Cotações")
     
-    carteira_acoes = st.secrets["renda_variavel"]["carteira_acoes"]
-    inv_ativos = st.secrets["renda_variavel"].get("investido_renda_variavel", [])
-    total_investido_rv = sum(inv_ativos) if inv_ativos else 0
-    ganho_rv_real = st.secrets["renda_variavel"].get("total_ganho", 0.0)
+    carteira_acoes = ['XPML11', 'MCCI11', 'ITSA4', 'BOVA11', 'CEAB3', 'VALE3', 'WEGE3']
+    inv_ativos = [99.73, 89.89, 130.10, 173.23, 107.40, 322.70, 224.45]
+    total_investido_rv = 1147.50
     
-    # Bloco de resumo responsivo (2x2 no celular)
     resumo_html = f"""
     <div class="resumo-container">
         <div class="resumo-box">
@@ -383,17 +377,16 @@ with aba_renda_variavel:
         </div>
         <div class="resumo-box">
             <div class="resumo-label">Ganho Total</div>
-            <div class="resumo-value">{fmt_brl(ganho_rv_real)}</div>
+            <div class="resumo-value" style="color: {cor_rv};">{fmt_brl(ganho_rv_real)}</div>
         </div>
         <div class="resumo-box">
             <div class="resumo-label">Rentabilidade Média</div>
-            <div class="resumo-value">{fmt_pct(rent_rv)}</div>
+            <div class="resumo-value" style="color: {cor_rv};">{fmt_pct(rent_rv)}</div>
         </div>
     </div>
     """
     st.markdown(resumo_html, unsafe_allow_html=True)
     
-    # MÁGICA PARA OS CARDS: Cria linhas de 4 colunas
     num_cols = 4
     num_rows = math.ceil(len(carteira_acoes) / num_cols)
 
@@ -413,7 +406,7 @@ with aba_renda_variavel:
                     min_6m = hist['Low'].tail(126).min()
                     hist_5a = hist['Low'].tail(1260); min_5a = hist_5a.min()
                     texto_data_5a = formatar_data_min(hist_5a.idxmin())
-                    share = (inv_ativos[idx] / total_investido_rv) * 100 if total_investido_rv > 0 and idx < len(inv_ativos) else 0
+                    share = (inv_ativos[idx] / total_investido_rv) * 100
                     sinal = "COMPRAR" if rsi < 35 else ("VENDER" if rsi > 70 else "MANTER")
                     cor_sinal = "#00FF00" if rsi < 35 else ("#FF4B4B" if rsi > 70 else "#808080")
                     nome_empresa = dicionario_empresas.get(ativo, "")
@@ -437,11 +430,9 @@ with aba_renda_variavel:
                             
                             st.progress(share / 100.0) 
 
-    st.divider()
-
-    st.subheader("🔥 Oportunidades de Compra (Radar Fundamentalista)")
-    st.markdown("Ativos com RSI abaixo de 35 **e** Fundamentos saudáveis (Score >= 2):")
-
+    # ==========================================
+    # LÓGICA DO RADAR OTIMIZADA
+    # ==========================================
     radar_tickers = ['PETR4', 'BBAS3', 'ITUB4', 'BBDC4', 'MGLU3', 'LREN3', 'VIVT3', 'TAEE11', 'KLBN11', 'SANB11', 'BPAC11', 'HGLG11', 'KNRI11', 'MXRF11']
     oportunidades = []
 
@@ -467,7 +458,11 @@ with aba_renda_variavel:
                             "data_min_5a": texto_data_5a_radar, "score": score
                         })
 
+    # Se houver oportunidades, exibe a seção do Radar
     if oportunidades:
+        st.divider()
+        st.subheader("🔥 Radar")
+        
         num_rows_op = math.ceil(len(oportunidades) / num_cols)
         for row in range(num_rows_op):
             cols_op = st.columns(num_cols)
@@ -484,8 +479,6 @@ with aba_renda_variavel:
                             st.markdown(f"<div style='text-align: center; margin-top: -5px; margin-bottom: 2px; line-height: 1.1;'><a class='ticker-link' href='{link_op}' target='_blank' style='font-size: 16px; font-weight: bold; color: #00FF00;'>{op['ativo']}</a><br><span style='font-size: 10px; color: gray;'>{nome_empresa_radar}</span></div>", unsafe_allow_html=True)
                             st.metric(label="Preço", value=fmt_brl(op['preco']), delta=f"{op['variacao']:.2f}%".replace(".", ","), label_visibility="collapsed")
                             st.markdown(f"<div style='font-size: 12px; line-height: 1.3; margin-top: -10px; margin-bottom: 5px;'>🎯 <b>RSI:</b> {op['rsi']:.1f}".replace(".", ",") + f"<br>🏆 <b>Score:</b> {estrelas} ({op['score']}/4)<br>📉 <b>Mín 6m:</b> {fmt_brl(op['min_6m'])}<br>⏳ <b>Mín 5a:</b> {fmt_brl(op['min_5a'])}{op['data_min_5a']}</div>", unsafe_allow_html=True)
-    else:
-        st.info("Nenhuma oportunidade com RSI baixo e bons fundamentos no momento.")
 
     st.divider()
     st.markdown("#### 💡 Notícias dos Seus Ativos - Renda Variável (Últimas 24h)")
@@ -500,18 +493,17 @@ with aba_renda_variavel:
 with aba_renda_fixa:
     st.subheader("Painel de Renda Fixa")
     
-    ativos_fam = st.secrets["familia"]["ativos"][:-1]
-    inv_fam = st.secrets["familia"]["investido"][:-1]
-    pos_fam = st.secrets["familia"]["posicao"][:-1]
-    gan_fam = st.secrets["familia"]["ganho"][:-1]
-    rent_fam = st.secrets["familia"]["rentabilidade"][:-1]
+    ativos_fam = ["IPCA+ 2032", "PRÉ 2032", "Selic 2031"]
+    inv_fam = [2987.73, 1476.27, 96038.86]
+    pos_fam = [3092.00, 1455.00, 101007.00]
+    gan_fam = [104.27, -21.27, 4968.14]
+    rent_fam = [3.49, -1.44, 5.17]
     
-    total_investido = sum(inv_fam)
-    total_posicao = sum(pos_fam)
-    total_ganho = sum(gan_fam)
-    rent_media = (total_ganho / total_investido) * 100 if total_investido > 0 else 0
+    total_investido = 101650.36
+    total_posicao = 106680.55
+    total_ganho = 5051.14
+    rent_media = 4.97
 
-    # Resumo Renda Fixa (2x2 no mobile)
     resumo_rf_html = f"""
     <div class="resumo-container">
         <div class="resumo-box"><div class="resumo-label">Total Investido</div><div class="resumo-value">{fmt_brl(total_investido)}</div></div>
@@ -560,20 +552,11 @@ with aba_renda_fixa:
         x=alt.X('Mês:N', sort=None, title='Mês', axis=alt.Axis(labelAngle=0)),
         y=alt.Y('Taxa:Q', title='Taxa Anualizada (%)', scale=alt.Scale(zero=False)),
         color=alt.Color('Ativo:N', legend=alt.Legend(orient='bottom', columns=3)),
-        tooltip=[
-            alt.Tooltip('Mês:N', title='Mês'),
-            alt.Tooltip('Ativo:N', title='Ativo'),
-            alt.Tooltip('Taxa:Q', title='Taxa (%)', format='.2f')
-        ]
+        tooltip=[alt.Tooltip('Mês:N', title='Mês'), alt.Tooltip('Ativo:N', title='Ativo'), alt.Tooltip('Taxa:Q', title='Taxa (%)', format='.2f')]
     )
 
-    text = alt.Chart(df_ultimo_mes).mark_text(
-        align='left', dx=5, fontSize=12, fontWeight='bold'
-    ).encode(
-        x=alt.X('Mês:N'),
-        y=alt.Y('Taxa:Q'),
-        text=alt.Text('Taxa:Q', format='.1f'),
-        color=alt.Color('Ativo:N', legend=None)
+    text = alt.Chart(df_ultimo_mes).mark_text(align='left', dx=5, fontSize=12, fontWeight='bold').encode(
+        x=alt.X('Mês:N'), y=alt.Y('Taxa:Q'), text=alt.Text('Taxa:Q', format='.1f'), color=alt.Color('Ativo:N', legend=None)
     )
 
     chart_fam = (line + text).properties(height=350).interactive()
@@ -592,18 +575,17 @@ with aba_renda_fixa:
 with aba_maria:
     st.subheader("Painel de Renda Fixa - Maria")
     
-    ativos_maria = st.secrets["maria"]["ativos"][:-1]
-    inv_maria = st.secrets["maria"]["investido"][:-1]
-    pos_maria = st.secrets["maria"]["posicao"][:-1]
-    gan_maria = st.secrets["maria"]["ganho"][:-1]
-    rent_maria = st.secrets["maria"]["rentabilidade"][:-1]
+    ativos_maria = ["IPCA+ 2029", "IPCA+ 2032", "IPCA+ 2035 c/juros sem", "PRÉ 2032", "PRÉ 2035 c/juros sem", "SELIC 2031"]
+    inv_maria = [5779.67, 1580.87, 5444.10, 1452.61, 2370.30, 26095.77]
+    pos_maria = [6524.00, 1636.00, 5658.00, 1475.00, 2252.00, 29744.00]
+    gan_maria = [744.33, 55.13, 213.90, 22.39, -118.30, 3648.23]
+    rent_maria = [12.88, 3.49, 3.93, 1.54, -4.99, 13.98]
     
-    total_investido_maria = sum(inv_maria)
-    total_posicao_maria = sum(pos_maria)
-    total_ganho_maria = sum(gan_maria)
-    rent_media_maria = (total_ganho_maria / total_investido_maria) * 100 if total_investido_maria > 0 else 0
+    total_investido_maria = 42723.32
+    total_posicao_maria = 47289.00
+    total_ganho_maria = 4565.68
+    rent_media_maria = 10.69
 
-    # Resumo Maria (2x2 no mobile)
     resumo_maria_html = f"""
     <div class="resumo-container">
         <div class="resumo-box"><div class="resumo-label">Total Investido</div><div class="resumo-value">{fmt_brl(total_investido_maria)}</div></div>
@@ -648,20 +630,11 @@ with aba_maria:
         x=alt.X('Mês:N', sort=None, title='Mês', axis=alt.Axis(labelAngle=0)),
         y=alt.Y('Taxa:Q', title='Taxa Anualizada (%)', scale=alt.Scale(zero=False)),
         color=alt.Color('Ativo:N', legend=alt.Legend(orient='bottom', columns=3)),
-        tooltip=[
-            alt.Tooltip('Mês:N', title='Mês'),
-            alt.Tooltip('Ativo:N', title='Ativo'),
-            alt.Tooltip('Taxa:Q', title='Taxa (%)', format='.2f')
-        ]
+        tooltip=[alt.Tooltip('Mês:N', title='Mês'), alt.Tooltip('Ativo:N', title='Ativo'), alt.Tooltip('Taxa:Q', title='Taxa (%)', format='.2f')]
     )
 
-    text_maria = alt.Chart(df_ultimo_mes_maria).mark_text(
-        align='left', dx=5, fontSize=12, fontWeight='bold'
-    ).encode(
-        x=alt.X('Mês:N'),
-        y=alt.Y('Taxa:Q'),
-        text=alt.Text('Taxa:Q', format='.1f'),
-        color=alt.Color('Ativo:N', legend=None)
+    text_maria = alt.Chart(df_ultimo_mes_maria).mark_text(align='left', dx=5, fontSize=12, fontWeight='bold').encode(
+        x=alt.X('Mês:N'), y=alt.Y('Taxa:Q'), text=alt.Text('Taxa:Q', format='.1f'), color=alt.Color('Ativo:N', legend=None)
     )
 
     chart_maria = (line_maria + text_maria).properties(height=350).interactive()
